@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ahorro Diario Emocional</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f1f6fb;
+            color: #333;
+            padding: 20px;
+            max-width: 700px;
+            margin: auto;
+        }
+
+        h1,
+        h2 {
+            text-align: center;
+            color: #4a90e2;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .emotions {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .emoji {
+            font-size: 1.8rem;
+            text-align: center;
+            cursor: pointer;
+            padding: 10px;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .emoji:hover {
+            transform: scale(1.2);
+            border-color: #4a90e2;
+        }
+
+        .selected {
+            border-color: #4caf50 !important;
+        }
+
+        button {
+            background: #4a90e2;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            font-size: 1rem;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .summary {
+            background: #eaf4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .progress-bar-container {
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 25px;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #4caf50;
+            width: 0%;
+            transition: width 0.5s;
+        }
+
+        .info {
+            text-align: center;
+            font-style: italic;
+            margin-top: 10px;
+        }
+
+        .motivation-box {
+            background-color: #fff9e5;
+            border-left: 5px solid #ffcc00;
+            padding: 15px;
+            margin-top: 30px;
+            border-radius: 10px;
+        }
+
+        .motivation-box h3 {
+            margin-top: 0;
+            color: #e6a600;
+        }
+
+        .motivation-box p {
+            font-size: 1.1rem;
+            font-style: italic;
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>💡 Ahorra Según tu Estado de Ánimo</h1>
+
+    <div class="input-group">
+        <label for="salary">💰 Ingresa tu sueldo mensual (COP):</label>
+        <input type="number" id="salary" placeholder="Ej: 2000000" />
+    </div>
+
+    <h2>🧠 ¿Cómo te sientes hoy?</h2>
+    <div class="emotions" id="emotionGrid">
+        <!-- Emociones generadas por JS -->
+    </div>
+
+    <button onclick="saveEmotion()">Calcular y Guardar Ahorro</button>
+
+    <div class="summary">
+        <h2>📊 Resumen Diario</h2>
+        <p><strong>Emoción Seleccionada:</strong> <span id="selectedEmotion">Ninguna</span></p>
+        <p><strong>Ahorro sugerido hoy:</strong> $<span id="dailySaving">0</span> COP</p>
+        <p><strong>Ahorro total acumulado:</strong> $<span id="totalSaving">0</span> COP</p>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="info" id="infoText">Meta mensual: entre $300.000 y $350.000 COP</div>
+    </div>
+
+    <div class="motivation-box" id="motivationSection" style="display: none;">
+        <h3>💬 Frase del Día</h3>
+        <p id="motivationPhrase">Tu motivación aparecerá aquí.</p>
+    </div>
+
+    <script>
+        const emotions = {
+            "😊 Feliz": 0.01,
+            "😢 Triste": 0.02,
+            "😰 Ansioso": 0.015,
+            "😌 En paz": 0.008,
+            "😠 Enojado": 0.025,
+            "💪 Motivado": 0.012,
+            "😴 Cansado": 0.005,
+            "🙏 Agradecido": 0.015,
+            "😫 Estresado": 0.01,
+            "🎨 Creativo": 0.018
+        };
+
+        const motivationPhrases = {
+            "😊 Feliz": "Hoy sonreíste: esa es tu mejor inversión.",
+            "😢 Triste": "Hoy fue difícil, pero seguir intentándolo también cuenta.",
+            "😰 Ansioso": "Respira, estás haciendo tu mejor esfuerzo.",
+            "😌 En paz": "La tranquilidad también te acerca a tus metas.",
+            "😠 Enojado": "Canaliza tu energía: cada peso cuenta.",
+            "💪 Motivado": "¡Estás imparable hoy! Sigue así.",
+            "😴 Cansado": "Descansar también es avanzar. Hoy diste lo que pudiste.",
+            "🙏 Agradecido": "Agradecer lo que tienes te prepara para lo que viene.",
+            "😫 Estresado": "Un paso a la vez. Cada pequeño ahorro importa.",
+            "🎨 Creativo": "Tu creatividad también construye tu futuro financiero."
+        };
+
+        let selectedEmotion = null;
+        let totalSaved = 0;
+        const minGoal = 300000;
+        const maxGoal = 350000;
+
+        const emotionGrid = document.getElementById("emotionGrid");
+
+        // Generar botones de emociones
+        for (const [emotion, percent] of Object.entries(emotions)) {
+            const div = document.createElement("div");
+            div.className = "emoji";
+            div.textContent = emotion.split(" ")[0]; // solo el emoji
+            div.title = emotion;
+            div.onclick = () => {
+                // Quitar clase a todos
+                document.querySelectorAll(".emoji").forEach(e => e.classList.remove("selected"));
+                div.classList.add("selected");
+                selectedEmotion = emotion;
+                document.getElementById("selectedEmotion").innerText = emotion;
+            };
+            emotionGrid.appendChild(div);
+        }
+
+        function saveEmotion() {
+            const salary = parseFloat(document.getElementById("salary").value);
+            if (!salary || salary <= 0) {
+                alert("Por favor ingresa un sueldo válido.");
+                return;
+            }
+            if (!selectedEmotion) {
+                alert("Selecciona una emoción para continuar.");
+                return;
+            }
+
+            const percentage = emotions[selectedEmotion];
+            const dailySaving = Math.round(salary * percentage);
+            totalSaved += dailySaving;
+
+            document.getElementById("dailySaving").innerText = dailySaving.toLocaleString();
+            document.getElementById("totalSaving").innerText = totalSaved.toLocaleString();
+
+            const progress = Math.min(100, ((totalSaved - minGoal) / (maxGoal - minGoal)) * 100);
+            document.getElementById("progressBar").style.width = Math.max(0, progress) + "%";
+
+            // Mostrar frase motivacional
+            const phrase = motivationPhrases[selectedEmotion];
+            document.getElementById("motivationPhrase").innerText = phrase;
+            document.getElementById("motivationSection").style.display = "block";
+
+            // Reset emoción seleccionada
+            document.querySelectorAll(".emoji").forEach(e => e.classList.remove("selected"));
+            selectedEmotion = null;
+            document.getElementById("selectedEmotion").innerText = "Ninguna";
+        }
+    </script>
+
+</body>
+
+</html>
